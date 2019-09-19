@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -eu;
+cd $(dirname $(readlink -f $0));
+
+CONTAINER=plseminar-idris;
+IMAGE=remexre/plseminar-idris;
+
+# Check if container exists.
+if docker inspect $CONTAINER --type container >/dev/null 2>/dev/null; then
+	# Container exists, so start it if we need to.
+	up="$(docker inspect $CONTAINER -f '{{ .State.Running }}' --type container)";
+	if [[ $up = false ]]; then
+		docker start $CONTAINER;
+	fi;
+else
+	# Start the login.sh script in the Docker container.
+	docker run \
+		-d \
+		--name $CONTAINER \
+		-v /home:/home \
+		$IMAGE \
+		/usr/local/bin/login.sh $(id -nu) $(id -ng) $(id -u) $(id -g);
+
+	# Somewhat a hack; in theory this should ensure the user gets set up
+	# properly and all by the time we docker exec. I haven't been bitten by it
+	# yet, but the race condition where this isn't long enough is
+	# theoretically an issue on a heavily loaded (or really slow) system.
+	sleep 3
+fi;
+
+# If we don't have a command, just run idris.
+if [[ "$#" -eq 0 ]]; then
+	cmd=idris;
+else
+	cmd=$@;
+fi;
+
+# Run the command in the container.
+# The sleep is to work around https://github.com/moby/moby/issues/28009.
+docker exec -e TERM -itu $(id -u):$(id -g) -w `pwd` $CONTAINER bash -c "sleep 0.1; exec $cmd";
