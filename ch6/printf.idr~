@@ -1,0 +1,35 @@
+data Format
+  = Any Format
+  | Lit String Format
+  | Str Format
+  | End
+
+PrintfType : Format -> Type
+PrintfType (Any fmt) = {a: Type} -> (show: Show a) -> a -> PrintfType fmt
+PrintfType (Lit _ fmt) = PrintfType fmt
+PrintfType (Str fmt) = String -> PrintfType fmt
+PrintfType End = String
+
+printfFmt : (fmt : Format) -> String -> PrintfType fmt
+printfFmt (Any fmt) acc = \s, x => printfFmt fmt (show x)
+printfFmt (Lit s fmt) acc = printfFmt fmt (acc ++ s)
+printfFmt (Str fmt) acc = \s => printfFmt fmt (acc ++ s)
+printfFmt End acc = acc
+
+LitCh : Char -> Format -> Format
+LitCh c (Lit s fmt) = Lit (strCons c s) fmt
+LitCh c fmt = Lit (strCons c "") fmt
+
+toFormat : List Char -> Format
+toFormat [] = End
+toFormat ('{'::'}'::tl) = Any (toFormat tl)
+toFormat ('{'::'s'::'}'::tl) = Str (toFormat tl)
+toFormat ('{'::'{'::tl) = LitCh '{' (toFormat tl)
+toFormat ('}'::'}'::tl) = LitCh '}' (toFormat tl)
+toFormat (hd::tl) = LitCh hd (toFormat tl)
+
+printf : (fmt : String) -> PrintfType (toFormat (unpack fmt))
+printf fmt = printfFmt _ ""
+
+oneEqOne : String
+oneEqOne = printf "{} = {s}" (Integer implementation of Prelude.Show.Show) 1 "one"
