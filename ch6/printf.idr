@@ -5,7 +5,7 @@ data Format
   | End
 
 FormatType : Format -> Type
-FormatType (Any fmt) = Show a => a -> FormatType fmt
+FormatType (Any fmt) = {a : Type} -> Show a => a -> FormatType fmt
 FormatType (Lit _ fmt) = FormatType fmt
 FormatType (Str fmt) = String -> FormatType fmt
 FormatType End = String
@@ -31,5 +31,5 @@ toFormat (hd::tl) = LitCh hd (toFormat tl)
 format : (fmt : String) -> FormatType (toFormat (unpack fmt))
 format fmt = doFormat _ ""
 
--- oneEqOne : String
--- oneEqOne = format "{} = {s}" 1 "one"
+oneEqOne : String
+oneEqOne = format "{} = {s}" 1 "one"
